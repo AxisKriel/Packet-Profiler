@@ -49,6 +49,7 @@ namespace Packet_Profiler
 				ServerApi.Hooks.GameInitialize.Deregister(this, OnInitialize);
 				ServerApi.Hooks.NetGetData.Deregister(this, OnGetData);
 				ServerApi.Hooks.NetSendData.Deregister(this, OnSendData);
+				ServerApi.Hooks.ServerChat.Deregister(this, OnChat);
 			}
 		}
 
@@ -57,6 +58,7 @@ namespace Packet_Profiler
 			ServerApi.Hooks.GameInitialize.Register(this, OnInitialize);
 			ServerApi.Hooks.NetGetData.Register(this, OnGetData);
 			ServerApi.Hooks.NetSendData.Register(this, OnSendData);
+			ServerApi.Hooks.ServerChat.Register(this, OnChat);
 
 			//TShockAPI.Commands.ChatCommands.Add(new Command(Commands.Status, "sendstatus"));
 
@@ -80,41 +82,75 @@ namespace Packet_Profiler
 			TShockAPI.Commands.ChatCommands.Add(new Command("packetprofiler", Commands.Lock, "plock", "pp-lock"));
 			TShockAPI.Commands.ChatCommands.Add(new Command("packetprofiler", Commands.Mode, "pp-mode"));
 			TShockAPI.Commands.ChatCommands.Add(new Command("packetprofiler", Commands.Settings, "pp-settings"));
+			TShockAPI.Commands.ChatCommands.Add(new Command("packetprofiler", Commands.Input, "pp-input"));
+		}
+
+		void OnChat(ServerChatEventArgs args)
+		{
+			if (Profiler.Lock.Contains(PacketTypes.ChatText) && Profiler.Input.HasFlag(ProfileInput.Get))
+			{
+				switch (Profiler.Mode)
+				{
+					case ProfileMode.Disabled:
+						return;
+					case ProfileMode.Lock:
+					case ProfileMode.All:
+						Profiler.ProfileChatGet(args);
+						return;
+					case ProfileMode.Block:
+						args.Handled = true;
+						return;
+				}
+			}
 		}
 
 		void OnGetData(GetDataEventArgs args)
 		{
-			switch (Profiler.Mode)
+			if (Profiler.Input.HasFlag(ProfileInput.Get))
 			{
-				case ProfileMode.Disabled:
-					return;
-				case ProfileMode.Lock:
-					if (Profiler.Lock.Contains(args.MsgID))
-					{
+				switch (Profiler.Mode)
+				{
+					case ProfileMode.Disabled:
+						return;
+					case ProfileMode.Lock:
+						if (Profiler.Lock.Contains(args.MsgID))
+						{
+							Profiler.ProfileNetGet(args);
+						}
+						break;
+					case ProfileMode.All:
 						Profiler.ProfileNetGet(args);
-					}
-					break;
-				case ProfileMode.All:
-					Profiler.ProfileNetGet(args);
-					break;
+						break;
+					case ProfileMode.Block:
+						if (Profiler.Lock.Contains(args.MsgID))
+							args.Handled = true;
+						return;
+				}
 			}
 		}
 
 		void OnSendData(SendDataEventArgs args)
 		{
-			switch (Profiler.Mode)
+			if (Profiler.Input.HasFlag(ProfileInput.Send))
 			{
-				case ProfileMode.Disabled:
-					return;
-				case ProfileMode.Lock:
-					if (Profiler.Lock.Contains(args.MsgId))
-					{
+				switch (Profiler.Mode)
+				{
+					case ProfileMode.Disabled:
+						return;
+					case ProfileMode.Lock:
+						if (Profiler.Lock.Contains(args.MsgId))
+						{
+							Profiler.ProfileNetSend(args);
+						}
+						break;
+					case ProfileMode.All:
 						Profiler.ProfileNetSend(args);
-					}
-					break;
-				case ProfileMode.All:
-					Profiler.ProfileNetSend(args);
-					break;
+						break;
+					case ProfileMode.Block:
+						if (Profiler.Lock.Contains(args.MsgId))
+							args.Handled = true;
+						return;
+				}
 			}
 		}
 	}

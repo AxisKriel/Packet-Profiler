@@ -14,6 +14,8 @@ namespace Packet_Profiler
 	{
 		public static NetProfiler Instance = new NetProfiler();
 
+		public ProfileInput Input { get; set; }
+
 		public ProfileMode Mode { get; set; }
 
 		public List<PacketTypes> Lock { get; private set; }
@@ -48,6 +50,23 @@ namespace Packet_Profiler
 			Lock = new List<PacketTypes>();
 		}
 
+		public void SetInput(ProfileInput input)
+		{
+			Input = input;
+		}
+
+		public string GetInputAsString()
+		{
+			var sb = new StringBuilder();
+
+			if (Input.HasFlag(ProfileInput.Get))
+				sb.Append("get");
+			if (Input.HasFlag(ProfileInput.Send))
+				sb.Append("send");
+
+			return sb.ToString();
+		}
+
 		public void SetLock(params string[] args)
 		{
 			Lock.Clear();
@@ -57,6 +76,18 @@ namespace Packet_Profiler
 				if (int.TryParse(args[i], out p))
 					Lock.Add((PacketTypes)p);
 			}
+		}
+
+		public void ProfileChatGet(ServerChatEventArgs e)
+		{
+			PacketTypes packet = PacketTypes.ChatText;
+			string s = string.Format("CHAT: Packet {0}{1}{2}",
+				ShowPacketNames ? packet.ToString() + " " : "",
+				"[{0}]".SFormat((int)packet),
+				ShowWhoAmI ? " (Sender: {0})".SFormat(e.Who) : "");
+			Console.ForegroundColor = ConsoleColor.Green;
+			Console.WriteLine(s);
+			Console.ResetColor();
 		}
 
 		public void ProfileNetGet(GetDataEventArgs data)
@@ -89,5 +120,13 @@ namespace Packet_Profiler
 			Console.WriteLine(sb.ToString());
 			Console.ResetColor();
 		}
+	}
+
+	[Flags]
+	public enum ProfileInput
+	{
+		None = 0,
+		Get = 1,
+		Send = 2
 	}
 }

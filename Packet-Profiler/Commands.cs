@@ -14,6 +14,25 @@ namespace Packet_Profiler
 	{
 		private static NetProfiler Profiler = PacketProfiler.Profiler;
 
+		public static void Input(CommandArgs args)
+		{
+			if (args.Parameters.Count < 1)
+			{
+				args.Player.SendInfoMessage("Syntax: {0}pp-input [gs]", TShock.Config.CommandSpecifier);
+				return;
+			}
+
+			ProfileInput newinput = ProfileInput.None;
+
+			if (args.Parameters[0].ToLowerInvariant().Contains('g'))
+				newinput |= ProfileInput.Get;
+			if (args.Parameters[0].ToLowerInvariant().Contains('s'))
+				newinput |= ProfileInput.Send;
+
+			Profiler.SetInput(newinput);
+			args.Player.SendInfoMessage("Profiler input is now set to [{0}].", Profiler.GetInputAsString());
+		}
+
 		public static void Lock(CommandArgs args)
 		{
 			Profiler.SetLock(args.Parameters.ToArray());
@@ -48,6 +67,11 @@ namespace Packet_Profiler
 					case "disable":
 						Profiler.Mode = ProfileMode.Disabled;
 						args.Player.SendInfoMessage("Disabled profiling.");
+						return;
+					case "block":
+					case "halt":
+						Profiler.Mode = ProfileMode.Block;
+						args.Player.SendInfoMessage("Now blocking incoming packets. Set new packets with 'plock'.");
 						return;
 					default:
 						args.Player.SendErrorMessage("Invalid mode!");

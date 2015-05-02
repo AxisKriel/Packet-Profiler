@@ -10,6 +10,7 @@ namespace Packet_Profiler
 	{
 		Disabled = 0,
 		Lock,
-		All
+		All,
+		Block = 9001
 	}
 }
